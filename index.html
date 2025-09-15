@@ -686,12 +686,13 @@
             // Configurar para impresión en PDF
             const style = document.createElement('style');
             style.textContent = `
-                @page:first {
-                    margin: 0;
-                }
                 @page {
                     size: A4;
-                    margin: 50px;
+                    margin: 0;
+                    margin-top: 50px;
+                }    
+                @page:first {
+                    margin-top: 0;
                 }
                 body {
                     -webkit-print-color-adjust: exact !important;
