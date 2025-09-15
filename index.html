@@ -688,14 +688,10 @@
             style.textContent = `
                 @page {
                     size: A4;
-                    margin: 0;
-                    margin-top: 50px;
+                    margin: 50px 0 0 0;
                 }    
                 @page:first {
-                    margin-top: 0;
-                }
-                @page:last-child {
-                    display: none;
+                    margin: 0;
                 }
                 body {
                     -webkit-print-color-adjust: exact !important;
@@ -704,6 +700,8 @@
                 .cv-container {
                     box-shadow: none !important;
                     margin: 0 !important;
+                    max-height: calc(2 * 297mm) !important;/* 2 páginas tamaño A4 */
+                    overflow: hidden !important; /* recorta el contenido sobrante */
                 }
             `;
             document.head.appendChild(style);
