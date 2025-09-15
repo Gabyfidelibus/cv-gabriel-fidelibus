@@ -434,8 +434,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(102,126,234,0.4);
         }
-
-
         
         @media print {
             .cv-container {
@@ -522,7 +520,7 @@
                     </ul>
                 </div>
         
-                <div class="left-section" id="herramientas-section">
+                <div class="left-section">
                     <h3>Herramientas Informáticas</h3>
                     <ul class="skill-list">
                         <li>Microsoft Office (Excel, Word, PP)</li>
@@ -535,7 +533,7 @@
                     </ul>
                 </div>
                 
-                <div class="left-section" id="idiomas-section">
+                <div class="left-section">
                     <h3>Idiomas</h3>
                     <div class="languages-item">
                         <span class="language-name">Español</span>
@@ -610,7 +608,7 @@
                         </ul>
                     </div>
 
-                    <div class="experience-item" id="camarero-experience">
+                    <div class="experience-item">
                         <div class="job-header">
                             <div>
                                 <div class="job-title">Camarero</div>
@@ -623,7 +621,7 @@
                         </ul>
                     </div>
 
-                    <div class="experience-item" id="responsable-tienda-experience">
+                    <div class="experience-item">
                         <div class="job-header">
                             <div>
                                 <div class="job-title">Responsable de Tienda</div>
@@ -676,41 +674,24 @@
 
     <script>
         function downloadPDF() {
-            // Crear los espaciadores
-            const spacers = [];
-            
-            // Espaciador entre Herramientas Informáticas e Idiomas
-            const spacer1 = document.createElement('div');
-            spacer1.className = 'pdf-spacer';
-            spacer1.id = 'spacer-1';
-            
-            const herramientasSection = document.getElementById('herramientas-section');
-            herramientasSection.insertAdjacentElement('afterend', spacer1);
-            spacers.push(spacer1);
-            
-            // Espaciador entre Camarero y Responsable de Tienda
-            const spacer2 = document.createElement('div');
-            spacer2.className = 'pdf-spacer';
-            spacer2.id = 'spacer-2';
-            
-            const camareroExperience = document.getElementById('camarero-experience');
-            camareroExperience.insertAdjacentElement('afterend', spacer2);
-            spacers.push(spacer2);
-            
-            // Configurar el título y ocultar el botón
+            // Usar el método nativo de impresión del navegador
+            // que funciona de manera más confiable y sin errores de seguridad
             const originalTitle = document.title;
             document.title = 'CV_Gabriel_Fidelibus';
             
+            // Ocultar el botón de descarga antes de imprimir
             const downloadBtn = document.querySelector('.download-btn');
             downloadBtn.style.display = 'none';
             
-            // Configurar estilos para imprimir
+            // Configurar para impresión en PDF
             const style = document.createElement('style');
-            style.id = 'print-styles';
             style.textContent = `
+                @page:first {
+                    margin: 0;
+                }
                 @page {
                     size: A4;
-                    margin: 0;
+                    margin: 50px;
                 }
                 body {
                     -webkit-print-color-adjust: exact !important;
@@ -726,40 +707,12 @@
             // Ejecutar la impresión
             window.print();
             
-            // Función para limpiar después de la impresión
-            function cleanupAfterPrint() {
-                // Eliminar los espaciadores
-                spacers.forEach(spacer => {
-                    if (spacer && spacer.parentNode) {
-                        spacer.parentNode.removeChild(spacer);
-                    }
-                });
-                
-                // Restaurar el estado original
+            // Restaurar el estado original después de la impresión
+            setTimeout(() => {
                 downloadBtn.style.display = 'block';
                 document.title = originalTitle;
-                
-                // Eliminar estilos de impresión
-                const printStyle = document.getElementById('print-styles');
-                if (printStyle) {
-                    document.head.removeChild(printStyle);
-                }
-            }
-            
-            // Limpiar después de un tiempo para asegurar que la impresión se complete
-            setTimeout(cleanupAfterPrint, 2000);
-            
-            // También limpiar cuando se detecte el evento afterprint (si está disponible)
-            if (window.onafterprint !== undefined) {
-                const originalAfterPrint = window.onafterprint;
-                window.onafterprint = function() {
-                    cleanupAfterPrint();
-                    if (originalAfterPrint) {
-                        originalAfterPrint();
-                    }
-                    window.onafterprint = originalAfterPrint;
-                };
-            }
+                document.head.removeChild(style);
+            }, 1000);
         }
     </script>
 </body>
