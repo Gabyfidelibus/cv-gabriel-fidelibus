@@ -674,48 +674,141 @@
 
     <script>
         function downloadPDF() {
-            // Usar el método nativo de impresión del navegador
-            // que funciona de manera más confiable y sin errores de seguridad
-            const originalTitle = document.title;
-            document.title = 'CV_Gabriel_Fidelibus';
-            
-            // Ocultar el botón de descarga antes de imprimir
-            const downloadBtn = document.querySelector('.download-btn');
-            downloadBtn.style.display = 'none';
-            
-            // Configurar para impresión en PDF
-            const style = document.createElement('style');
-            style.textContent = `
-                @page {
-                    size: A4;
-                    margin: 50px 0 0 0;
-                }    
-                @page:first {
-                    margin: 0;
-                }
-                body {
-                    -webkit-print-color-adjust: exact !important;
-                    color-adjust: exact !important;
-                }
-                .cv-container {
-                    box-shadow: none !important;
-                    margin: 0 !important;
-                    max-height: calc(2 * 297mm) !important;/* 2 páginas tamaño A4 */
-                    overflow: hidden !important; /* recorta el contenido sobrante */
-                }
-            `;
-            document.head.appendChild(style);
-            
-            // Ejecutar la impresión
-            window.print();
-            
-            // Restaurar el estado original después de la impresión
-            setTimeout(() => {
-                downloadBtn.style.display = 'block';
-                document.title = originalTitle;
-                document.head.removeChild(style);
-            }, 1000);
+  const originalTitle = document.title;
+  document.title = 'CV_Gabriel_Fidelibus';
+
+  const downloadBtn = document.querySelector('.download-btn');
+  if (downloadBtn) downloadBtn.style.display = 'none';
+
+  const original = document.querySelector('.cv-container');
+  if (!original) {
+    console.error('No se encontró .cv-container');
+    if (downloadBtn) downloadBtn.style.display = 'block';
+    return;
+  }
+
+  // Helper: convierte mm a px midiendo en el DOM
+  function mmToPx(mm) {
+    const el = document.createElement('div');
+    el.style.height = mm + 'mm';
+    el.style.position = 'absolute';
+    el.style.visibility = 'hidden';
+    document.body.appendChild(el);
+    const px = el.getBoundingClientRect().height;
+    document.body.removeChild(el);
+    return px;
+  }
+
+  // CSS de impresión temporal
+  const style = document.createElement('style');
+  style.id = 'print-style';
+  style.textContent = `
+    @page { size: A4; margin: 0; }
+    @page:first { margin: 0; }
+    /* Nota: @page margin-top no siempre se aplica igual, simulamos con padding en la segunda "página" */
+    @media print {
+      /* ocultamos todo excepto nuestro wrapper de impresión */
+      body * { visibility: hidden !important; }
+      #print-cv-wrapper, #print-cv-wrapper * { visibility: visible !important; }
+      #print-cv-wrapper { position: static !important; }
+    }
+
+    /* estilos de cada página que vamos a crear dinámicamente */
+    #print-cv-wrapper { width: 100%; }
+    .print-page {
+      height: 297mm;            /* alto de una A4 */
+      box-sizing: border-box;
+      overflow: hidden;         /* recortamos lo que pase de la página */
+      page-break-after: always; /* fuerza salto de página en la impresión */
+      width: 100%;
+    }
+    .print-page:not(.first) {
+      padding-top: 50px;        /* simulamos margin-top: 50px para la 2ª página */
+    }
+
+    /* evita cortar dentro de bloques marcados si es posible */
+    .avoid-break { page-break-inside: avoid; break-inside: avoid; }
+  `;
+  document.head.appendChild(style);
+
+  // calculamos en px el alto de A4
+  const pageHeightPx = mmToPx(297);
+  const secondPagePaddingPx = 50; // lo pediste en 50px
+
+  // clonamos el contenido original (así no alteramos el original hasta restaurar)
+  const clone = original.cloneNode(true);
+  const nodes = Array.from(clone.children);
+
+  // wrapper + dos páginas
+  const wrapper = document.createElement('div');
+  wrapper.id = 'print-cv-wrapper';
+  const page1 = document.createElement('div');
+  page1.className = 'print-page first';
+  const page2 = document.createElement('div');
+  page2.className = 'print-page';
+  wrapper.appendChild(page1);
+  wrapper.appendChild(page2);
+
+  // función para comprobar overflow respecto al cliente (incluye padding)
+  function overflows(el) {
+    // clientHeight incluye padding; scrollHeight será mayor si hay overflow
+    return el.scrollHeight > el.clientHeight + 1; // +1 por margen de medición
+  }
+
+  // llenamos page1 y page2 con nodos enteros (no intentamos trocear nodos complejos)
+  let current = page1;
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    current.appendChild(node); // lo movemos del clone al page actual
+
+    if (overflows(current)) {
+      // si overflow en page1, lo quitamos y lo pasamos a page2
+      current.removeChild(node);
+      if (current === page1) {
+        page2.appendChild(node);
+        current = page2;
+
+        // si el nodo es tan grande que también hace overflow en page2, lo dejamos (se recortará)
+        if (overflows(current)) {
+          // nodo demasiado grande para caber en una página completa -> se cortará en la segunda
+          // no intentamos dividir nodos complejos (es posible, pero haría el script mucho más largo)
+          // continuamos pero no añadimos más nodos a page2 (rompemos)
+          break;
         }
+      } else {
+        // ya estamos en page2 y no cabe: paramos (el resto se descarta/recorta)
+        break;
+      }
+    }
+    // Si current === page2 y ahora sobrepasa, lo tratamos en el bloque anterior
+  }
+
+  // ocultamos el original y mostramos el wrapper para impresión
+  original.style.display = 'none';
+  document.body.appendChild(wrapper);
+
+  // limpieza después de imprimir
+  function cleanup() {
+    if (downloadBtn) downloadBtn.style.display = 'block';
+    document.title = originalTitle;
+    // restaurar DOM
+    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+    const s = document.getElementById('print-style');
+    if (s) s.parentNode.removeChild(s);
+    original.style.display = '';
+    window.removeEventListener('afterprint', cleanup);
+  }
+
+  // algunos navegadores soportan afterprint; usamos evento + fallback timeout
+  window.addEventListener('afterprint', cleanup);
+
+  // desencadenamos el diálogo de impresión
+  setTimeout(() => {
+    window.print();
+    // fallback por si afterprint no se dispara
+    setTimeout(cleanup, 1200);
+  }, 100);
+}
     </script>
 </body>
 </html>
