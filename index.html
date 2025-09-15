@@ -701,6 +701,8 @@
                 .cv-container {
                     box-shadow: none !important;
                     margin: 0 !important;
+                    max-height: calc(2 * 297mm); /* máximo 2 páginas A4 */
+                    overflow: hidden;
                 }
             `;
             document.head.appendChild(style);
